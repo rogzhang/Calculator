@@ -10,7 +10,7 @@ import Foundation
 
 struct CalculatorBrain {
     
-    private var accumulator: Double?
+    private var accumulator: (accumulator: Double?, description: String?)
     
     private enum Operation {
         case constant(Double)
@@ -42,28 +42,35 @@ struct CalculatorBrain {
         if let operation = operations[symbol] {
             switch operation {
             case .constant(let value):
-                accumulator = value
+                accumulator.accumulator = value
+                updateDescription(with: symbol, ofOperation : operation);
             case .unaryOperation(let function):
-                if accumulator != nil {
-                    accumulator = function(accumulator!)
+                if accumulator.accumulator != nil {
+                    accumulator.accumulator = function(accumulator.accumulator!)
+                    updateDescription(with: symbol, ofOperation : operation);
                 }
             case .binaryOperation(let function):
-                if accumulator != nil {
-                    pendingBinaryOperation = PendingBinaryOperation(function: function, firstOperand: accumulator!)
-                    accumulator = nil
+                if accumulator.accumulator != nil {
+                    performPendingBinaryOperation()
+                    pendingBinaryOperation = PendingBinaryOperation(function: function, firstOperand: accumulator.accumulator!)
+                    accumulator.accumulator = nil
+                    updateDescription(with: symbol, ofOperation : operation);
                 }
             case .equals:
                 performPendingBinaryOperation()
+                updateDescription(with: symbol, ofOperation : operation);
             case .clear:
-                accumulator = 0
+                accumulator.accumulator = 0
+                accumulator.description = nil
                 pendingBinaryOperation = nil
+                previousDescription = nil
             }
         }
     }
     
     private mutating func performPendingBinaryOperation() {
-        if pendingBinaryOperation != nil && accumulator != nil {
-            accumulator = pendingBinaryOperation!.perform(with: accumulator!)
+        if pendingBinaryOperation != nil && accumulator.accumulator != nil {
+            accumulator.accumulator = pendingBinaryOperation!.perform(with: accumulator.accumulator!)
             pendingBinaryOperation = nil
         }
     }
@@ -80,12 +87,68 @@ struct CalculatorBrain {
     }
     
     mutating func setOperand(_ operand: Double) {
-        accumulator = operand
+        accumulator.accumulator = operand
+        updateDescription(with: "\(operand)", ofOperation : Operation.constant(operand));
+    }
+    
+    private var previousDescription : String?
+    
+    private mutating func updateDescription(with description: String, ofOperation operation: Operation) {
+        if let oldDescription = accumulator.description {
+            switch operation {
+            case .constant(_):
+                previousDescription = description
+            case .unaryOperation(_):
+                if previousDescription != nil {
+                    previousDescription = description + "(" + previousDescription! + ")"
+                    accumulator.description = oldDescription + " " + previousDescription!
+                    previousDescription = nil
+                } else {
+                    accumulator.description = description + "(" + oldDescription + ")"
+                    previousDescription = accumulator.description
+                }
+            case .binaryOperation(_):
+                if previousDescription != nil {
+                    accumulator.description = previousDescription! + " " + description
+                    previousDescription = nil
+                } else {
+                    accumulator.description = oldDescription + " " + description
+                }
+            case .equals:
+                if previousDescription != nil {
+                    accumulator.description = oldDescription + " " + previousDescription!
+                    previousDescription = nil
+                }
+            default: break
+                
+            }
+        }
+        else {
+            accumulator.description = description
+            previousDescription = description
+        }
+    }
+    
+    var sequence: String? {
+        get {
+            if let description = accumulator.description {
+                return resultIsPending ? description + " ..." : description + " ="
+            }
+            else {
+                return nil
+            }
+        }
     }
     
     var result: Double? {
         get {
-            return accumulator
+            return accumulator.accumulator
+        }
+    }
+    
+    var resultIsPending: Bool {
+        get {
+            return pendingBinaryOperation != nil ? true : false
         }
     }
 }
