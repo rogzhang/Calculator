@@ -19,13 +19,24 @@ class ViewController: UIViewController {
     @IBAction func touchDigit(_ sender: UIButton) {
         let digit = sender.currentTitle!
         if userIsInTheMiddleOfTyping {
-            let textCurrentlyInDisplay = display.text!
+            var textCurrentlyInDisplay = display.text!
             if digit != "." || !textCurrentlyInDisplay.contains(".") {
-                display.text = textCurrentlyInDisplay + digit
+                if digit == "⬅︎" {
+                    textCurrentlyInDisplay.remove(at: textCurrentlyInDisplay.index(before: textCurrentlyInDisplay.endIndex))
+                    if textCurrentlyInDisplay.isEmpty {
+                        textCurrentlyInDisplay = String(0)
+                    }
+                    display.text = textCurrentlyInDisplay
+                }
+                else {
+                    display.text = textCurrentlyInDisplay + digit
+                }
             }
         } else {
-            display.text = digit == "." ? "0" + digit : digit
-            userIsInTheMiddleOfTyping = true
+            if digit != "⬅︎" {
+                display.text = digit == "." ? "0" + digit : digit
+                userIsInTheMiddleOfTyping = true
+            }
         }
     }
     
