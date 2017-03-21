@@ -42,40 +42,65 @@ class ViewController: UIViewController {
                 formatter.maximumFractionDigits = Constants.numberOfDecimalPoints
                 let valueNSNumber = NSNumber(value: value)
                 display.text = formatter.string(from: valueNSNumber)
-                descriptionLabel.text = brain.getDescription()
             }
             else {
                 display.text = "0"
-                descriptionLabel.text = " "
                 userIsInTheMiddleOfTyping = false
             }
         }
     }
     
-    @IBAction func backspace(_ sender: UIButton) {
-        guard userIsInTheMiddleOfTyping == true else {
-            return
+    private var displayResult: (result: Double?, isPending: Bool, description: String) = (nil, false, " ") {
+        didSet {
+            if let result = displayResult.result {
+                displayValue = result
+            }
+            else if displayResult.description == "?" {
+                displayValue = 0
+            }
+            descriptionLabel.text = displayResult.description
         }
-        
-        guard var number = display.text else {
-            return
-        }
-        
-        number.remove(at: number.index(before: number.endIndex))
-        if number.isEmpty {
-            number = "0"
-            userIsInTheMiddleOfTyping = false
-        }
-        display.text = number
     }
     
-    @IBAction func clear(_ sender: UIButton) {
+    @IBAction private func backspace(_ sender: UIButton) {
+        if userIsInTheMiddleOfTyping {
+            guard var number = display.text else {
+                return
+            }
+            number.remove(at: number.index(before: number.endIndex))
+            if number.isEmpty {
+                number = "0"
+                userIsInTheMiddleOfTyping = false
+                displayResult = brain.evaluate(using: variableValues)
+            }
+        } else {
+            brain.undo()
+            displayResult = brain.evaluate(using: variableValues)
+        }
+    }
+    
+    @IBAction func pushM(_ sender: UIButton) {
+        userIsInTheMiddleOfTyping = false
+        let symbol = String((sender.currentTitle!).characters.dropFirst())
+        variableValues[symbol] = displayValue
+        displayResult = brain.evaluate(using: variableValues)
+    }
+    
+    @IBAction func setM(_ sender: UIButton) {
+        brain.setOperand(variable: sender.currentTitle!)
+        displayResult = brain.evaluate(using: variableValues)
+    }
+    
+    @IBAction private func clear(_ sender: UIButton) {
         brain.clear()
         displayValue = 0
+        descriptionLabel.text = " "
+        variableValues = [:]
         userIsInTheMiddleOfTyping = false
     }
     
     private var brain = CalculatorBrain()
+    private var variableValues = [String: Double]()
     
     @IBAction private func performOperation(_ sender: UIButton) {
         if userIsInTheMiddleOfTyping {
@@ -85,7 +110,7 @@ class ViewController: UIViewController {
         if let mathematicalSymbol = sender.currentTitle {
             brain.performOperation(mathematicalSymbol)
         }
-        displayValue = brain.result
+        displayResult = brain.evaluate(using: variableValues)
     }
 }
 
