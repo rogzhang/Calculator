@@ -69,9 +69,10 @@ class ViewController: UIViewController {
             }
             number.remove(at: number.index(before: number.endIndex))
             if number.isEmpty {
-                number = "0"
+                display.text = "0"
                 userIsInTheMiddleOfTyping = false
-                displayResult = brain.evaluate(using: variableValues)
+            } else {
+                display.text = number
             }
         } else {
             brain.undo()
