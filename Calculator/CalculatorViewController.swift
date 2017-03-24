@@ -1,5 +1,5 @@
 //
-//  ViewController.swift
+//  CalculatorViewController.swift
 //  Calculator
 //
 //  Created by Roger Zhang on 2017-02-03.
@@ -8,8 +8,9 @@
 
 import UIKit
 
-class ViewController: UIViewController {
+class CalculatorViewController: UIViewController {
     
+    @IBOutlet weak var graphButton: UIButton!
     @IBOutlet private weak var display: UILabel!
     @IBOutlet weak var descriptionLabel: UILabel!
     
@@ -69,14 +70,14 @@ class ViewController: UIViewController {
             }
             number.remove(at: number.index(before: number.endIndex))
             if number.isEmpty {
-                display.text = "0"
+                number = "0"
                 userIsInTheMiddleOfTyping = false
-            } else {
-                display.text = number
             }
+            display.text = number
         } else {
             brain.undo()
             displayResult = brain.evaluate(using: variableValues)
+            graphButton.isEnabled = !displayResult.isPending
         }
     }
     
@@ -85,11 +86,13 @@ class ViewController: UIViewController {
         let symbol = String((sender.currentTitle!).characters.dropFirst())
         variableValues[symbol] = displayValue
         displayResult = brain.evaluate(using: variableValues)
+        graphButton.isEnabled = !displayResult.isPending
     }
     
     @IBAction func setM(_ sender: UIButton) {
         brain.setOperand(variable: sender.currentTitle!)
         displayResult = brain.evaluate(using: variableValues)
+        graphButton.isEnabled = !displayResult.isPending
     }
     
     @IBAction private func clear(_ sender: UIButton) {
@@ -112,9 +115,34 @@ class ViewController: UIViewController {
             brain.performOperation(mathematicalSymbol)
         }
         displayResult = brain.evaluate(using: variableValues)
+        graphButton.isEnabled = !displayResult.isPending
+    }
+    
+    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
+        if let identifier = segue.identifier {
+            if identifier == "graph" && !displayResult.isPending {
+                if let graphViewController = (segue.destination.contents as? GraphViewController) {
+                    graphViewController.navigationItem.title = displayResult.description
+                    graphViewController.function = { (x: CGFloat) -> Double in
+                        self.variableValues[Constants.variableM] = Double(x)
+                        self.displayResult = self.brain.evaluate(using: self.variableValues)
+                        return self.displayResult.result!
+                    }
+                }
+            }
+        }
     }
 }
 
-struct Constants {
-    static let numberOfDecimalPoints = 6
+extension UIViewController
+{
+    var contents: UIViewController {
+        get {
+            if let navigationController = self as? UINavigationController {
+                return navigationController.visibleViewController ?? self
+            } else {
+                return self
+            }
+        }
+    }
 }
