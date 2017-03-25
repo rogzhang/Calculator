@@ -8,7 +8,12 @@
 
 import UIKit
 
-class CalculatorViewController: UIViewController {
+class CalculatorViewController: UIViewController, UISplitViewControllerDelegate {
+    
+    override func awakeFromNib() {
+        super.awakeFromNib()
+        self.splitViewController?.delegate = self
+    }
     
     @IBOutlet weak var graphButton: UIButton!
     @IBOutlet private weak var display: UILabel!
@@ -131,6 +136,15 @@ class CalculatorViewController: UIViewController {
                 }
             }
         }
+    }
+    
+    func splitViewController(_ splitViewController: UISplitViewController, collapseSecondary secondaryViewController: UIViewController, onto primaryViewController: UIViewController) -> Bool {
+        if primaryViewController.contents == self {
+            if let gvc = secondaryViewController.contents as? GraphViewController, gvc.function == nil {
+                return true
+            }
+        }
+        return false
     }
 }
 
