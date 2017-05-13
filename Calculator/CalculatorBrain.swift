@@ -31,7 +31,7 @@ struct CalculatorBrain {
         "−" : Operation.binaryOperation({ $0 - $1 }, { "\($0) − \($1)"}, Precedence.min ),
         "+" : Operation.binaryOperation({ $0 + $1 }, { "\($0) + \($1)"}, Precedence.min ),
         "rand" : Operation.nullaryOperation({ Double(arc4random()) }, "random()"),
-        "π" : Operation.constant(M_PI),
+        "π" : Operation.constant(Double.pi),
         "e" : Operation.constant(M_E),
         "=" : Operation.equals
     ]
